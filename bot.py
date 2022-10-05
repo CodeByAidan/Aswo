@@ -12,7 +12,7 @@ import logging
 import os
 import asyncpg
 import socketio
-
+from config import replay_key
 from utils.osu import Osu
 import utils
 
@@ -41,6 +41,7 @@ class Aswo(commands.Bot):
         self.startup_time: typing.Optional[datetime.timedelta] = None
         self.start_time = discord.utils.utcnow()
         self.logger = logging.getLogger(__name__)
+        self.replaY_key = replay_key
         os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
         os.environ["JISHAKU_NO_DM_TRACEBACK"] = "True"
         
