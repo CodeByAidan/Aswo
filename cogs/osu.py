@@ -101,7 +101,7 @@ class osu(commands.Cog):
 
 				self.bot.logger.info(f"Skin : {skin}")
 
-				async with self.bot.session.post("https://apis.issou.best/ordr/renders", data={"replayURL":osr, "username":"Aswo", "resolution":"1280x720", "skin": skin,"verificationKey":"i8yEm5sGt875lJt2"}) as resp:
+				async with self.bot.session.post("https://apis.issou.best/ordr/renders", data={"replayURL":osr, "username":"Aswo", "resolution":"1280x720", "skin": skin,"verificationKey":self.bot.replay_key}) as resp:
 					ordr_json = await resp.json()
 				
 				
