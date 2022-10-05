@@ -1,0 +1,6 @@
+asyncpg
+discord.py
+timeago
+jishaku
+python-socketio
+typing_extensions

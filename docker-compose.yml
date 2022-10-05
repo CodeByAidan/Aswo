@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  bot:
+    container_name: "aswo"
+  
+    build: ./
+    env_file:
+      - ./.env
+
+    depends_on:
+      - db
+      
+  db:
+    container_name: aswo_db
+    image: postgres:13
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+
+    ports:
+      - 1254:1254
+
+    command: -p 1254
