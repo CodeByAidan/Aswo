@@ -41,7 +41,7 @@ class Aswo(commands.Bot):
         self.startup_time: typing.Optional[datetime.timedelta] = None
         self.start_time = discord.utils.utcnow()
         self.logger = logging.getLogger(__name__)
-        self.replaY_key = replay_key
+        self.replay_key = replay_key
         os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
         os.environ["JISHAKU_NO_DM_TRACEBACK"] = "True"
         

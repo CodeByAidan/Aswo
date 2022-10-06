@@ -27,7 +27,7 @@ class testinng(commands.Cog):
         msg = message or ctx.reference
         data = json.dumps(await self.bot.http.get_message(ctx.channel.id, msg.id), indent=4)
         await ctx.send(f"```json\n{data}```")
-	
+
 
 
 async def setup(bot: Aswo):
