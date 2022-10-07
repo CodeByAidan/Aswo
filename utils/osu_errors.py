@@ -8,5 +8,4 @@ class NoUserFound(OsuBaseException):
 
 class NoBeatMapFound(OsuBaseException):
     """Returns an exception for when an beatmap/beatmapset isn't found"""
-
     pass

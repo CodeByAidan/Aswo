@@ -12,6 +12,7 @@ services:
       - db
       
   db:
+    restart: unless-stopped
     container_name: aswo_db
     image: postgres:13
     volumes:

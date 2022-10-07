@@ -50,9 +50,8 @@ class Aswo(commands.Bot):
 
 
 
-    async def get_prefix(bot: Self, message: discord.Message):
+    async def get_prefix(bot: Aswo, message: discord.Message):
         try:
-                
             return commands.when_mentioned_or(">>", bot.prefixes[message.guild.id])(bot, message)
         except KeyError:
             return commands.when_mentioned_or(">>")(bot, message)

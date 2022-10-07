@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import Index
 import datetime
 from typing import Optional
 import discord
@@ -91,9 +92,8 @@ class osu(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
-
             osr = message.attachments[0].url
-            if osr.endswith('.osr'):
+            if osr.endswith('.osr') or re.findall("\.osr", message.content):
                 skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id)
 
                 if skin is None:
@@ -158,8 +158,16 @@ class osu(commands.Cog):
     @osu.command(description="Finds info on a beatmap")
     @app_commands.describe(beatmap="Beatmap to get info on")
     async def beatmap(self, itr: discord.Interaction, beatmap: str):
-        beatmapid = re.findall(r"\d+", beatmap)[1]
-        rbeatmap = await self.bot.osu.get_beatmap(beatmapid)
+        try:
+            beatmapid = re.findall(r"\d+", beatmap)[1]
+        except IndexError:
+            beatmapid = re.findall(r"\d+", beatmap)[0]
+        
+        try:
+            rbeatmap = await self.bot.osu.get_beatmap(beatmapid)
+        except Exception as e:
+            return await itr.response.send_message(e)
+        
         ranked = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.ranked_date.replace('Z', ''))) if rbeatmap.ranked_date else "Not Ranked!"
         updated = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.last_updated.replace('Z', '')))
         submitted = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.submitted_date.replace('Z', ''))) if rbeatmap.ranked_date else "Not Submitted!"

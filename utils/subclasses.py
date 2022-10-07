@@ -10,9 +10,6 @@ if TYPE_CHECKING:
 
 
 class Context(commands.Context):
-
-    """An custom context class that might not be used much since rewrite is for slash commands (it's good to have though) ;-;"""
-    
     channel: Union[discord.VoiceChannel, discord.TextChannel, discord.Thread, discord.DMChannel, discord.ForumChannel]
     prefix: str
     command: commands.Command[Any, ..., Any]

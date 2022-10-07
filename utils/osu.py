@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 import typing
 import aiohttp
 from .default import date
-from .osu_errors import NoUserFound
+from .osu_errors import NoUserFound, NoBeatMapFound
 
 class Osu:
     def __init__(self, *, client_id: int, client_secret: str, session: aiohttp.ClientSession):
@@ -115,6 +115,9 @@ class Osu:
 
         async with self.session.get(self.API_URL+f"/beatmaps/{beatmap}", headers=headers, params=params) as resp:
             json = await resp.json()
+
+        if 'error' in json.keys():
+            raise NoBeatMapFound("No beatmap was found by that name!")
 
         return Beatmap(json)
 
