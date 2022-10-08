@@ -93,7 +93,7 @@ class osu(commands.Cog):
     async def on_message(self, message: discord.Message):
         try:
             osr = message.attachments[0].url
-            if osr.endswith('.osr') or re.findall("\.osr", message.content):
+            if osr.endswith('.osr') or "https" and ".osr" in message.content:
                 skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id)
 
                 if skin is None:
@@ -158,19 +158,25 @@ class osu(commands.Cog):
     @osu.command(description="Finds info on a beatmap")
     @app_commands.describe(beatmap="Beatmap to get info on")
     async def beatmap(self, itr: discord.Interaction, beatmap: str):
+        matches = re.findall(r"\d+", beatmap)
+        if not matches:
+            return await itr.response.send_message("Could not find a beatmap with that url/id!", ephemeral=True)
+    
         try:
-            beatmapid = re.findall(r"\d+", beatmap)[1]
+            beatmapid = matches[1]
         except IndexError:
-            beatmapid = re.findall(r"\d+", beatmap)[0]
+            beatmapid = matches[0]
+
+            
         
         try:
             rbeatmap = await self.bot.osu.get_beatmap(beatmapid)
         except Exception as e:
-            return await itr.response.send_message(e)
+            return await  itr.response.send_message(e, ephemeral=True)
         
-        ranked = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.ranked_date.replace('Z', ''))) if rbeatmap.ranked_date else "Not Ranked!"
-        updated = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.last_updated.replace('Z', '')))
-        submitted = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.submitted_date.replace('Z', ''))) if rbeatmap.ranked_date else "Not Submitted!"
+        ranked = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.ranked_date)) if rbeatmap.ranked_date else "Not Ranked!"
+        updated = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.last_updated))
+        submitted = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.submitted_date)) if rbeatmap.ranked_date else "Not Submitted!"
         creator = await self.bot.osu.fetch_user(rbeatmap.creator)
 
 

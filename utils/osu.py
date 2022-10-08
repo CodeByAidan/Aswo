@@ -117,7 +117,7 @@ class Osu:
             json = await resp.json()
 
         if 'error' in json.keys():
-            raise NoBeatMapFound("No beatmap was found by that name!")
+            raise NoBeatMapFound("No beatmap was found by that ID!")
 
         return Beatmap(json)
 
@@ -199,14 +199,14 @@ class Beatmap:
         self.difficulty = data['version']
         self.cs = data['cs']
         self.drain = data['drain']
-        self.last_updated = data['last_updated']
+        self.last_updated = data['last_updated'].replace('Z', '')
         self.pass_count = data['passcount']
         self.play_count = data['playcount']
         self.url = data['url']    
         self.favorite_count = data['beatmapset']['favourite_count']
         self.nsfw = data['beatmapset']['nsfw']
-        self.ranked_date = data['beatmapset']['ranked_date']
-        self.submitted_date = data['beatmapset']['submitted_date']
+        self.ranked_date = data['beatmapset']['ranked_date'].replace('Z', '')
+        self.submitted_date = data['beatmapset']['submitted_date'].replace('Z', '')
         self.max_combo = data['max_combo']
         self.creator = data['beatmapset']['creator']
         self.ar = data['ar']
