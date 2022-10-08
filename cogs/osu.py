@@ -160,19 +160,17 @@ class osu(commands.Cog):
     async def beatmap(self, itr: discord.Interaction, beatmap: str):
         matches = re.findall(r"\d+", beatmap)
         if not matches:
-            return await itr.response.send_message("Could not find a beatmap with that url/id!", ephemeral=True)
+            return await itr.response.send_message("Could not find a beatmap with that url/id! Make sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
     
         try:
             beatmapid = matches[1]
         except IndexError:
             beatmapid = matches[0]
 
-            
-        
         try:
             rbeatmap = await self.bot.osu.get_beatmap(beatmapid)
         except Exception as e:
-            return await  itr.response.send_message(e, ephemeral=True)
+            return await  itr.response.send_message(f"{e}\nMake sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
         
         ranked = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.ranked_date)) if rbeatmap.ranked_date else "Not Ranked!"
         updated = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.last_updated))

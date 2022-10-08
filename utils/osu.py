@@ -39,12 +39,7 @@ class Osu:
 
 
     async def fetch_user(self, user: Union[str, int]) -> User:
-        autorization = await self.get_token()
-        headers = {
-            "Content-Type": "application/json",
-            "Accept":"application/json",
-            "Authorization": f'Bearer {autorization}'
-        }
+        headers = await self.make_headers()
 
         params = {
             "limit":5
@@ -52,34 +47,24 @@ class Osu:
         async with self.session.get(self.API_URL+f"/users/{user}",headers=headers,params=params) as response:
             json = await response.json()
 
+        if 'error' in json.keys() and json['error'] is None:
+            raise NoUserFound("No user was found by that name!")
 
         return User(json)
 
-    async def fetch_user_recent(self, user: Union[str, int]):
-        autorization = await self.get_token()
-        headers = {
-            "Content-Type": "application/json",
-            "Accept":"application/json",
-            "Authorization": f'Bearer {autorization}'
-        }
+    async def fetch_user_score(self, user: Union[str, int], type: str, /, limit: int = 1):
+        headers = await self.make_headers()
 
         params = {
-            "limit":5
+            "limit": limit
         }
-        async with self.session.get(self.API_URL+f"/users/{user}/scores/recent",headers=headers,params=params) as response:
+        async with self.session.get(self.API_URL+f"/users/{user}/scores/{type}", headers=headers, params=params) as response:
             json = await response.json()
-
-    
 
         return json
 
     async def fetch_user_beatmaps(self, user: str, type: str, limit: int) -> Beatmap:
-        autorization = await self.get_token()
-        headers = {
-            "Content-Type": "application/json",
-            "Accept":"application/json",
-            "Authorization": f'Bearer {autorization}'
-        }
+        headers = await self.make_headers()
 
         params = {
             "limit":limit
@@ -90,18 +75,12 @@ class Osu:
 
         async with self.session.get(self.API_URL+f"/users/{user}/beatmapsets/{type}",headers=headers,params=params) as response:
             json = await response.json()
-        
+
     
         return json
     
     async def tests(self, method: str, /, endpoint: str, params: dict):
-        authorization = await self.get_token()
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {authorization}"
-        }
-
+        headers = await self.make_headers()
         async with self.session.request(method, self.API_URL + endpoint, params=params, headers=headers) as resp:
             json = await resp.json()
 
@@ -109,11 +88,8 @@ class Osu:
 
     async def get_beatmap(self, beatmap: Union[str, int]): 
         headers = await self.make_headers()
-        params = {
 
-        }
-
-        async with self.session.get(self.API_URL+f"/beatmaps/{beatmap}", headers=headers, params=params) as resp:
+        async with self.session.get(self.API_URL+f"/beatmaps/{beatmap}", headers=headers) as resp:
             json = await resp.json()
 
         if 'error' in json.keys():
@@ -124,32 +100,27 @@ class Osu:
 
 class User:
     def __init__(self, data):
-        try:
-            self.data = data
-            self.username = data.get('username')
-            self.global_rank = data.get('statistics').get("global_rank") if data.get('statistics').get("global_rank") is not None else 0
-            self.pp = data.get("statistics").get("pp")  if data.get('statistics') else "None"
-            self._rank = data.get("statistics").get("grade_counts") if data.get('statistics') else "None"
-            self.accuracy = f"{data.get('statistics').get('hit_accuracy'):,.2f}"  if data.get('statistics') else "None"
-            self.country_rank = data.get('statistics').get("country_rank") if data.get('statistics').get("country_rank") is not None else 0
-            self._profile_order = data['profile_order'] if data['profile_order'] != KeyError else "Cant Get Profile Order!"
-            self.country_emoji = f":flag_{data.get('country_code').lower()}:" if data.get("country_code") else "None"
-            self.country_code = data.get("country_code") if data.get("country_code") else "None"
-            self._country = data.get("country")
-            self.avatar_url = data.get("avatar_url")
-            self.id = data.get("id")
-            self.playstyle = data.get("playstyle") 
-            self.playmode = data.get("playmode")
-            self.max_combo = data.get("statistics").get("maximum_combo")
-            self.level = data.get("statistics").get("level")
-            self.follower_count = data.get("follower_count")
-            self.total_hits = data.get("statistics").get("total_hits")
-            self.total_score = data.get("statistics").get("total_score")
-            self.play_count = data.get("statistics").get("play_count")
-
-
-        except: # These return None if not available so bare except works fine here.
-            raise NoUserFound("No user was found by that name!")
+        self.data = data
+        self.username = data.get('username')
+        self.global_rank = data.get('statistics').get("global_rank") if data.get('statistics').get("global_rank") is not None else 0
+        self.pp = data.get("statistics").get("pp")  if data.get('statistics') else "None"
+        self._rank = data.get("statistics").get("grade_counts") if data.get('statistics') else "None"
+        self.accuracy = f"{data.get('statistics').get('hit_accuracy'):,.2f}"  if data.get('statistics') else "None"
+        self.country_rank = data.get('statistics').get("country_rank") if data.get('statistics').get("country_rank") is not None else 0
+        self._profile_order = data['profile_order'] if data['profile_order'] != KeyError else "Cant Get Profile Order!"
+        self.country_emoji = f":flag_{data.get('country_code').lower()}:" if data.get("country_code") else "None"
+        self.country_code = data.get("country_code") if data.get("country_code") else "None"
+        self._country = data.get("country")
+        self.avatar_url = data.get("avatar_url")
+        self.id = data.get("id")
+        self.playstyle = data.get("playstyle") 
+        self.playmode = data.get("playmode")
+        self.max_combo = data.get("statistics").get("maximum_combo")
+        self.level = data.get("statistics").get("level")
+        self.follower_count = data.get("follower_count")
+        self.total_hits = data.get("statistics").get("total_hits")
+        self.total_score = data.get("statistics").get("total_score")
+        self.play_count = data.get("statistics").get("play_count")
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} username: {self.username!r}, id: {self.id}>"
