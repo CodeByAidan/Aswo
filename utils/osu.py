@@ -1,10 +1,12 @@
 from __future__ import annotations
 import datetime
-from typing import Any, Dict, List, Union
-import typing
+import logging
+from typing import Dict, List, Union
 import aiohttp
 from .default import date
 from .osu_errors import NoUserFound, NoBeatMapFound
+
+logger = logging.getLogger(__name__)
 
 class Osu:
     def __init__(self, *, client_id: int, client_secret: str, session: aiohttp.ClientSession):
@@ -14,18 +16,18 @@ class Osu:
         self.API_URL = "https://osu.ppy.sh/api/v2"
         self.TOKEN_URL = "https://osu.ppy.sh/oauth/token"
         self.beatmap_types = ['favourite', 'graveyard', 'loved', 'most_played', 'pending', 'ranked']
+        self.special_types = []
     
     async def get_token(self):
         data = {
             "client_id": self.id,
-            "client_secret":self.secret,
+            "client_secret": self.secret,
             'grant_type':'client_credentials',
             'scope':"public",
         }
 
-
         async with self.session.post(self.TOKEN_URL,data=data) as response:
-            return (await response.json()).get("access_token")
+            return (await response.json())['access_token']
     
     async def make_headers(self):
         authorization = await self.get_token()
@@ -36,7 +38,6 @@ class Osu:
         }
 
         return headers
-
 
     async def fetch_user(self, user: Union[str, int]) -> User:
         headers = await self.make_headers()
@@ -63,23 +64,30 @@ class Osu:
 
         return json
 
-    async def fetch_user_beatmaps(self, user: str, type: str, limit: int) -> Beatmap:
+    async def fetch_user_beatmaps(self, user: str, type: str, limit: int) -> List | Beatmapset:
         headers = await self.make_headers()
-
         params = {
             "limit":limit
         }
+        
         if type not in self.beatmap_types:
             types = ', '.join(self.beatmap_types)
             return f"Beatmap type must be in {types}"
 
-        async with self.session.get(self.API_URL+f"/users/{user}/beatmapsets/{type}",headers=headers,params=params) as response:
+        async with self.session.get(self.API_URL + f"/users/{user}/beatmapsets/{type}",headers=headers,params=params) as response:
             json = await response.json()
-
     
-        return json
+        beatmaps = []
+        
+        for beatmap in json:
+            if type in ['most_played']:
+                beatmaps.append({"beatmapset":Beatmapset(beatmap['beatmapset']), "beatmap": BeatmapCompact(beatmap['beatmap'])})
+            else:
+                beatmaps.append(Beatmapset(beatmap))
+                
+        return beatmaps
     
-    async def tests(self, method: str, /, endpoint: str, params: dict):
+    async def tests(self, method: str, /, endpoint: str, params: dict = None):
         headers = await self.make_headers()
         async with self.session.request(method, self.API_URL + endpoint, params=params, headers=headers) as resp:
             json = await resp.json()
@@ -107,7 +115,7 @@ class User:
         self._rank = data.get("statistics").get("grade_counts") if data.get('statistics') else "None"
         self.accuracy = f"{data.get('statistics').get('hit_accuracy'):,.2f}"  if data.get('statistics') else "None"
         self.country_rank = data.get('statistics').get("country_rank") if data.get('statistics').get("country_rank") is not None else 0
-        self._profile_order = data['profile_order'] if data['profile_order'] != KeyError else "Cant Get Profile Order!"
+        self._profile_order = data['profile_order'] if data['profile_order'] else "Cant Get Profile Order!"
         self.country_emoji = f":flag_{data.get('country_code').lower()}:" if data.get("country_code") else "None"
         self.country_code = data.get("country_code") if data.get("country_code") else "None"
         self._country = data.get("country")
@@ -141,7 +149,7 @@ class User:
         s_text = self._rank['s']
         sh_text = self._rank['sh']
         a_text = self._rank['a']
-        return f"``SS {ss_text}`` | ``SSH {ssh_text}`` | ``S {s_text}`` | ``SH {sh_text}`` | ``A {a_text}``"
+        return f"``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``"
 
     @property
     def joined_at(self) -> str:
@@ -192,3 +200,27 @@ class Beatmap:
 
         cover_data = self.data['beatmapset']['covers'][cover]
         return cover_data
+
+class BeatmapCompact:
+    def __init__(self, data: dict):
+        keys = {k: v for k, v in data.items()}
+        for k,v in keys.items():
+            setattr(self, k, v)
+            continue
+
+class Beatmapset:
+    def __init__(self, data: dict):
+        keys = {k: v for k, v in data.items()}
+        for k, v in keys.items():
+            setattr(self, k, v)
+            continue
+
+        
+
+    def covers(self, cover: str) -> str:
+        if cover not in self.data['covers']:
+            return "Cover not in covers!"
+
+        cover_data = self.data['covers'][cover]
+        return cover_data
+

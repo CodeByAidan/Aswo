@@ -1,6 +1,6 @@
+git+https://github.com/Rapptz/discord.py
+git+https://github.com/Gorialis/jishaku@master
 asyncpg
-discord.py
 timeago
-jishaku
 python-socketio
 typing_extensions

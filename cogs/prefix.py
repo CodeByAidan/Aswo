@@ -1,3 +1,4 @@
+import inspect
 import json
 from typing import Optional
 import discord
@@ -11,6 +12,8 @@ class testinng(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def setprefix(self, ctx: Context, prefix: str):
         query = """
             INSERT INTO prefix (guild_id, prefix) VALUES($1, $2)
@@ -22,12 +25,12 @@ class testinng(commands.Cog):
         self.bot.prefixes[ctx.guild.id] = prefix
         await ctx.send(f'Succesfully made the guild prefix: ``{prefix.replace("/""/", "")}``')
 
-    @commands.command
+    @commands.command()
+    @commands.guild_only()
     async def raw(self, ctx: Context, message: Optional[discord.Message]):
         msg = message or ctx.reference
         data = json.dumps(await self.bot.http.get_message(ctx.channel.id, msg.id), indent=4)
         await ctx.send(f"```json\n{data}```")
-
 
 
 async def setup(bot: Aswo):

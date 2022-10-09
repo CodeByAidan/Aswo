@@ -6,7 +6,7 @@ CREATE TABLE osu_user (
 );
 
 CREATE TABLE prefix (
-    guild_id BIGINT,
+    guild_id BIGINT PRIMARY KEY,
     prefix TEXT
 );
 

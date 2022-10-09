@@ -19,6 +19,7 @@ async def main():
         ]
         for ext in exts:
             await bot.load_extension(ext)
+        
         await bot.start(config.TOKEN, reconnect=True)
 
     

@@ -45,7 +45,7 @@ class Aswo(commands.Bot):
         os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
         os.environ["JISHAKU_NO_DM_TRACEBACK"] = "True"
         
-        super().__init__(command_prefix=self.get_prefix,intents=intents, activity=discord.Activity(type=discord.ActivityType.custom,name="Click on circles"))
+        super().__init__(command_prefix=self.get_prefix,intents=intents, activity=discord.Activity(type=discord.ActivityType.playing, name="Click on the circles!"))
 
 
 
