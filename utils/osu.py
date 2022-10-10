@@ -16,7 +16,7 @@ class Osu:
         self.API_URL = "https://osu.ppy.sh/api/v2"
         self.TOKEN_URL = "https://osu.ppy.sh/oauth/token"
         self.beatmap_types = ['favourite', 'graveyard', 'loved', 'most_played', 'pending', 'ranked']
-        self.special_types = []
+        self.special_types = ['most_played']
     
     async def get_token(self):
         data = {
@@ -64,7 +64,7 @@ class Osu:
 
         return json
 
-    async def fetch_user_beatmaps(self, user: str, type: str, limit: int) -> List | Beatmapset:
+    async def fetch_user_beatmaps(self, user: str, type: str, limit: int) -> List | BeatmapSet:
         headers = await self.make_headers()
         params = {
             "limit":limit
@@ -80,10 +80,10 @@ class Osu:
         beatmaps = []
         
         for beatmap in json:
-            if type in ['most_played']:
-                beatmaps.append({"beatmapset":Beatmapset(beatmap['beatmapset']), "beatmap": BeatmapCompact(beatmap['beatmap'])})
+            if type in self.special_types:
+                beatmaps.append({"beatmapset":BeatmapSet(beatmap['beatmapset']), "beatmap": BeatmapCompact(beatmap['beatmap'])})
             else:
-                beatmaps.append(Beatmapset(beatmap))
+                beatmaps.append(BeatmapSet(beatmap))
                 
         return beatmaps
     
@@ -178,14 +178,14 @@ class Beatmap:
         self.difficulty = data['version']
         self.cs = data['cs']
         self.drain = data['drain']
-        self.last_updated = data['last_updated'].replace('Z', '')
+        self.last_updated = datetime.datetime.fromisoformat(data['last_updated'].replace('Z', '')) if data['last_updated'] else None
         self.pass_count = data['passcount']
         self.play_count = data['playcount']
         self.url = data['url']    
         self.favorite_count = data['beatmapset']['favourite_count']
         self.nsfw = data['beatmapset']['nsfw']
-        self.ranked_date = data['beatmapset']['ranked_date'].replace('Z', '')
-        self.submitted_date = data['beatmapset']['submitted_date'].replace('Z', '')
+        self.ranked_date = datetime.datetime.fromisoformat(data['beatmapset']['ranked_date'].replace('Z', '')) if data['beatmapset']['ranked_date'] else None
+        self.submitted_date = datetime.datetime.fromisoformat(data['beatmapset']['submitted_date'].replace('Z', ''))  if data['beatmapset']['submitted_date'] else None
         self.max_combo = data['max_combo']
         self.creator = data['beatmapset']['creator']
         self.ar = data['ar']
@@ -208,14 +208,12 @@ class BeatmapCompact:
             setattr(self, k, v)
             continue
 
-class Beatmapset:
+class BeatmapSet:
     def __init__(self, data: dict):
         keys = {k: v for k, v in data.items()}
         for k, v in keys.items():
             setattr(self, k, v)
             continue
-
-        
 
     def covers(self, cover: str) -> str:
         if cover not in self.data['covers']:

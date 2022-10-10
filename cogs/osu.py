@@ -6,9 +6,9 @@ from discord.ext import commands
 from discord import app_commands
 from bot import Aswo
 import re
-from utils import default
+from utils import default, error_codes, URL_RE
 from utils import NoBeatMapFound, NoUserFound
-from utils.osu import User, Beatmapset
+from utils.osu import User, BeatmapSet
 import socketio
 
 
@@ -16,7 +16,6 @@ class UserSelect(discord.ui.Select):
     def __init__(self, user: User):
         self.user = user
         options = [
-    
             discord.SelectOption(label='Account Avatar', description=f'Shows the avatar of: {self.user.username}'),
             discord.SelectOption(label='Info', description=f'Info about: {self.user.username}'),
             discord.SelectOption(label="Statistics", description=f"Statistics about {self.user.username}")
@@ -73,8 +72,6 @@ class DropdownView(discord.ui.View):
         return False
 
 
-
-
 class osu(commands.Cog):
     def __init__(self, bot: Aswo):
         self.bot = bot
@@ -88,7 +85,7 @@ class osu(commands.Cog):
     async def on_message(self, message: discord.Message):
         try:
             osr = message.attachments[0].url
-            if osr.endswith('.osr') or "https" and ".osr" in message.content:
+            if osr.endswith('.osr') or URL_RE.findall(message.content):
                 skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id)
 
                 if skin is None:
@@ -99,9 +96,8 @@ class osu(commands.Cog):
                 async with self.bot.session.post("https://apis.issou.best/ordr/renders", data={"replayURL":osr, "username":"Aswo", "resolution":"1280x720", "skin": skin,"verificationKey":self.bot.replay_key}) as resp:
                     ordr_json = await resp.json()
                 
-                
-                if ordr_json['errorCode'] == 8:
-                    return await message.channel.send("This beatmap does not exist on osu!. Custom difficulties or non-submitted maps are not supported.\nSorry!")
+                if ordr_json['errorCode'] in error_codes:
+                    return await message.channel.send(error_codes.get(ordr_json['errorCode']))
                     
                 mes = await message.channel.send("Osu replay file detected, a rendered replay will be sent shortly! May take up to a minute while its uploading so sit back and relax :D!\nIll ping you when its finished!")
                 self.bot.logger.info(ordr_json)
@@ -162,9 +158,9 @@ class osu(commands.Cog):
         except Exception as e:
             return await  itr.response.send_message(f"{e}\nMake sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
         
-        ranked = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.ranked_date), style = "R") if rbeatmap.ranked_date else "Not Ranked!"
-        updated = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.last_updated), style = "R")
-        submitted = discord.utils.format_dt(datetime.datetime.fromisoformat(rbeatmap.submitted_date), style = "R") if rbeatmap.ranked_date else "Not Submitted!"
+        ranked = discord.utils.format_dt(rbeatmap.ranked_date, style = "R") if rbeatmap.ranked_date else "Not ranked!"
+        updated = discord.utils.format_dt(rbeatmap.last_updated, style = "R") if rbeatmap.last_updated else "Has not been updated"
+        submitted = discord.utils.format_dt(rbeatmap.submitted_date, style = "R") if rbeatmap.submitted_date else "Not Submitted!"
         creator = await self.bot.osu.fetch_user(rbeatmap.creator)
 
 
