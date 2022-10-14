@@ -3,14 +3,14 @@ import asyncio
 import discord
 import aiohttp
 import config
-from utils.osu import Osu
+import osu
 import os
 import asyncpg
 
 discord.utils.setup_logging()
 
 async def main():
-    async with aiohttp.ClientSession() as session, asyncpg.create_pool(config.POSTGRES_URI) as pool, Aswo(session=session, pool=pool, osu=Osu(client_id=config.OSU_CLIENT_ID, client_secret=config.OSU_CLIENT_SECRET, session=session)) as bot:
+    async with aiohttp.ClientSession() as session, asyncpg.create_pool(config.POSTGRES_URI) as pool, osu.Client(client_id=config.OSU_CLIENT_ID, client_secret=config.OSU_CLIENT_SECRET) as osu_client,Aswo(session=session, osu=osu_client,pool=pool ) as bot:
         await bot.load_extension("jishaku")
         exts = [
             f"cogs.{ext if not ext.endswith('.py') else ext[:-3]}"

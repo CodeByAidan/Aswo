@@ -7,10 +7,8 @@ from discord import app_commands
 from bot import Aswo
 import re
 from utils import default, error_codes, URL_RE
-from utils import NoBeatMapFound, NoUserFound
-from utils.osu import User, BeatmapSet
+from osu import User
 import socketio
-
 
 class UserSelect(discord.ui.Select):
     def __init__(self, user: User):
@@ -43,14 +41,19 @@ class UserSelect(discord.ui.Select):
             embed.add_field(name="Play Styles", value=f"Play Styles: {play_style}\nFavorite Play Mode: {self.user.playmode}", inline=True)
             await interaction.message.edit(embed=embed, view = DropdownView(interaction.user.id,self.user))    
 
-            
-
         if self.values[0] == "Info":
             embed = discord.Embed(color=0x2F3136)
             view = DropdownView(interaction.user.id,self.user)
             
+            ss_text = self.user.rank['ss']
+            ssh_text = self.user.rank['ssh']
+            s_text = self.user.rank['s']
+            sh_text = self.user.rank['sh']
+            a_text = self.user.rank['a']
+            profile_order ='\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(x for x in self.user.profile_order)
+            profile_order = profile_order.replace("_", " ")
 
-            embed.description = f"**{self.user.country_emoji} | Profile for [{self.user.username}](https://osu.ppy.sh/users/{self.user.id})**\n\n▹ **Bancho Rank**: #{self.user.global_rank:,} ({self.user.country_code}#{self.user.country_rank:,})\n▹ **Join Date**: {self.user.joined_at}\n▹ **PP**: {int(self.user.pp):,} **Acc**: {self.user.accuracy}%\n▹ **Ranks**: {self.user.ranks}\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {self.user.profile_order}**"
+            embed.description = f"**{self.user.country_emoji} | Profile for [{self.user.username}](https://osu.ppy.sh/users/{self.user.id})**\n\n▹ **Bancho Rank**: #{self.user.global_rank:,} ({self.user.country_code}#{self.user.country_rank:,})\n▹ **Join Date**: {self.user.joined_at}\n▹ **PP**: {int(self.user.pp):,} **Acc**: {self.user.accuracy}%\n▹ **Ranks**: ``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {profile_order}**"
             embed.set_thumbnail(url=self.user.avatar_url)
             await interaction.message.edit(embed=embed, view=view)
 
@@ -64,7 +67,6 @@ class DropdownView(discord.ui.View):
 
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-
         if interaction.user.id == self.author_id:
             return True
         await interaction.response.defer()
@@ -75,6 +77,7 @@ class DropdownView(discord.ui.View):
 class osu(commands.Cog):
     def __init__(self, bot: Aswo):
         self.bot = bot
+        self.cached_skins = {}
     
     osu = app_commands.Group(name="osu", description="All osu commands")
     set = app_commands.Group(name="set", description="allows you to set various things for osu", parent=osu)
@@ -86,10 +89,8 @@ class osu(commands.Cog):
         try:
             osr = message.attachments[0].url
             if osr.endswith('.osr') or URL_RE.findall(message.content):
-                skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id)
+                skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id) or 1
 
-                if skin is None:
-                    skin = 1
 
                 self.bot.logger.info(f"Skin : {skin}")
 
@@ -126,18 +127,27 @@ class osu(commands.Cog):
             user_query = await self.bot.pool.fetchrow("SELECT osu_username FROM osu_user WHERE user_id = $1", interaction.user.id) 
             try:
                 if user_query is None and username is None:
-                    user = await self.bot.osu.fetch_user(interaction.user.display_name)
+                    user = await self.bot.osu.fetch_user(interaction.user.display_name, key="username")
                 elif user_query is not None and username is None:
-                    user = await self.bot.osu.fetch_user(user_query.get("osu_username"))
+                    user = await self.bot.osu.fetch_user(user_query.get("osu_username"), key="username")
                 else:
-                    user = await self.bot.osu.fetch_user(username)
+                    user = await self.bot.osu.fetch_user(username, key="username")
             except Exception as e:
-                return await interaction.response.send_message("No User Was Found Sadly!", ephemeral=True)
+                return await interaction.response.send_message(f"{e}", ephemeral=True)
+
+
+            ss_text = user.rank['ss']
+            ssh_text = user.rank['ssh']
+            s_text = user.rank['s']
+            sh_text = user.rank['sh']
+            a_text = user.rank['a']
+            profile_order ='\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(x for x in user.profile_order)
+            profile_order = profile_order.replace("_", " ")
             
             view = DropdownView(interaction.user.id,user)
         
         
-            embed = discord.Embed(description=f"**{user.country_emoji} | Profile for [{user.username}](https://osu.ppy.sh/users/{user.id})**\n\n▹ **Bancho Rank**: #{user.global_rank:,} ({user.country_code}#{user.country_rank:,})\n▹ **Join Date**: {user.joined_at}\n▹ **PP**: {int(user.pp):,} **Acc**: {user.accuracy}%\n▹ **Ranks**: {user.ranks}\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {user.profile_order}**", color=0x2F3136)
+            embed = discord.Embed(description=f"**{user.country_emoji} | Profile for [{user.username}](https://osu.ppy.sh/users/{user.id})**\n\n▹ **Bancho Rank**: #{user.global_rank:,} ({user.country_code}#{user.country_rank:,})\n▹ **Join Date**: {user.joined_at}\n▹ **PP**: {int(user.pp):,} **Acc**: {user.accuracy}%\n▹ **Ranks**: ``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {profile_order}**", color=0x2F3136)
             embed.set_thumbnail(url=user.avatar_url)
             await interaction.response.send_message(embed=embed, view=view)
 
@@ -146,7 +156,7 @@ class osu(commands.Cog):
     async def beatmap(self, itr: discord.Interaction, beatmap: str):
         matches = re.findall(r"\d+", beatmap)
         if not matches:
-            return await itr.response.send_message("Could not find a beatmap with that url/id! Make sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
+            return await itr.response.send_message("Could not find a beatmap with that url/id!\nMake sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
     
         try:
             beatmapid = matches[1]
@@ -154,14 +164,14 @@ class osu(commands.Cog):
             beatmapid = matches[0]
 
         try:
-            rbeatmap = await self.bot.osu.get_beatmap(beatmapid)
+            rbeatmap = await self.bot.osu.fetch_beatmap(beatmapid)
         except Exception as e:
             return await  itr.response.send_message(f"{e}\nMake sure to use the second id in the beatmap url (thats the beatmap id) and not the first one (thats the beatmapset id)", ephemeral=True)
         
         ranked = discord.utils.format_dt(rbeatmap.ranked_date, style = "R") if rbeatmap.ranked_date else "Not ranked!"
         updated = discord.utils.format_dt(rbeatmap.last_updated, style = "R") if rbeatmap.last_updated else "Has not been updated"
         submitted = discord.utils.format_dt(rbeatmap.submitted_date, style = "R") if rbeatmap.submitted_date else "Not Submitted!"
-        creator = await self.bot.osu.fetch_user(rbeatmap.creator)
+        creator = await self.bot.osu.fetch_user(rbeatmap.creator, key="username")
 
 
         embed = discord.Embed(title=f"Info on {rbeatmap.title}", color=0x2F3136)
@@ -207,13 +217,23 @@ class osu(commands.Cog):
 
     @config.autocomplete('skin_id')
     async def id(self, itr: discord.Interaction, current: str):
+        if current in self.cached_skins:
+            if current == '':
+                return self.cached_skins
+            
+            return self.cached_skins[current]
+
         async with self.bot.session.get("https://apis.issou.best/ordr/skins", params={"pageSize": 400, "page":1}) as resp:
             skins = (await resp.json())['skins']
+
         if current == '':
             return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[1:25]]
 
-        
-        return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[1:25] if skin['id'] is int(current)]
+        self.cached_skins[current] = [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins]
+         
+        return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[:25] if skin['id'] is int(current)]
+
+
 
     @set.command()
     async def user(self, interaction: discord.Interaction, username: str): 
@@ -223,15 +243,13 @@ class osu(commands.Cog):
                 INSERT INTO osu_user (osu_username, user_id) VALUES($1, $2)
                 ON CONFLICT(user_id) DO 
                 UPDATE SET osu_username = excluded.osu_username
-
             """
-        
+
             await self.bot.pool.execute(query, username, interaction.user.id)
 
             await interaction.response.send_message(f"Sucessfullly set your osu username to: {username}")
         except Exception as e:
             return await interaction.response.send_message(f"Oh No! an error occured!\n\nError Class: **{e.__class__.__name__}**\n{default.traceback_maker(err=e)}If you're a coder and you think this is a fatal error, DM Sawsha#0598!", ephemeral=True)
-
 
 async def setup(bot: Aswo):
     await bot.add_cog(osu(bot))	

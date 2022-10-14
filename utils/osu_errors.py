@@ -9,3 +9,7 @@ class NoUserFound(OsuBaseException):
 class NoBeatMapFound(OsuBaseException):
     """Returns an exception for when an beatmap/beatmapset isn't found"""
     pass
+
+class WrongType(OsuBaseException):
+    """Returned when an wrong type for a Score or Beatmap is found"""
+    pass

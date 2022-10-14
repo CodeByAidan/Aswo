@@ -19,7 +19,6 @@ class testinng(commands.Cog):
             INSERT INTO prefix (guild_id, prefix) VALUES($1, $2)
             ON CONFLICT(guild_id) DO 
             UPDATE SET prefix = excluded.prefix
-
         """
         await self.bot.pool.execute(query, ctx.guild.id, prefix)
         self.bot.prefixes[ctx.guild.id] = prefix

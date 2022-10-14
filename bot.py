@@ -13,7 +13,7 @@ import os
 import asyncpg
 import socketio
 from config import replay_key
-from utils.osu import Osu
+from osu import Client
 import utils
 
 
@@ -31,12 +31,12 @@ class Aswo(commands.Bot):
         self, 
         *, 
         session: aiohttp.ClientSession,
-        osu: 'Osu',
+        osu: Client,
         pool: asyncpg.Pool
     ):
         self.session = session
         self._connected = False
-        self.osu: Osu = osu
+        self.osu: Client = osu
         self.pool = pool
         self.startup_time: typing.Optional[datetime.timedelta] = None
         self.start_time = discord.utils.utcnow()
