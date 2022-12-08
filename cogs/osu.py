@@ -216,19 +216,15 @@ class osu(commands.Cog):
     @config.autocomplete('skin_id')
     async def id(self, itr: discord.Interaction, current: str):
         if current in self.cached_skins:
-            if current == '':
-                return self.cached_skins
-            
-            return self.cached_skins[current]
-
+            return self.cached_skins[current] if current else self.cached_skins
         async with self.bot.session.get("https://apis.issou.best/ordr/skins", params={"pageSize": 400, "page":1}) as resp:
             skins = (await resp.json())['skins']
 
-        if current == '':
+        if not current:
             return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[1:25]]
 
         self.cached_skins[current] = [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins]
-         
+
         return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[:25] if skin['id'] is int(current)]
 
 
