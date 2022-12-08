@@ -1,4 +1,5 @@
 from __future__ import annotations
+import contextlib
 import datetime
 from typing import Optional
 import discord
@@ -86,7 +87,7 @@ class osu(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        try:
+        with contextlib.suppress(IndexError):
             osr = message.attachments[0].url
             if osr.endswith('.osr') or URL_RE.findall(message.content):
                 skin = await self.bot.pool.fetchval("SELECT skin_id FROM replay_config WHERE user_id = $1", message.author.id) or 1
@@ -96,14 +97,14 @@ class osu(commands.Cog):
 
                 async with self.bot.session.post("https://apis.issou.best/ordr/renders", data={"replayURL":osr, "username":"Aswo", "resolution":"1280x720", "skin": skin,"verificationKey":self.bot.replay_key}) as resp:
                     ordr_json = await resp.json()
-                
+
                 if ordr_json['errorCode'] in error_codes:
                     return await message.channel.send(error_codes.get(ordr_json['errorCode']))
-                    
+
                 mes = await message.channel.send("Osu replay file detected, a rendered replay will be sent shortly! May take up to a minute while its uploading so sit back and relax :D!\nIll ping you when its finished!")
                 self.bot.logger.info(ordr_json)
                 render_id = ordr_json['renderID']
-                
+
                 sio = socketio.AsyncClient()
 
                 @sio.event
@@ -112,13 +113,10 @@ class osu(commands.Cog):
                         data = data
                         self.bot.logger.info(data)
                         await mes.edit(content=f"Here's your rendered video {message.author.mention}!\n{data['videoUrl']}")
-                try:
+
+                with contextlib.suppress(socketio.exceptions.ConnectionError):
                     await sio.connect('https://ordr-ws.issou.best')
                     await sio.wait()
-                except socketio.exceptions.ConnectionError:
-                    pass
-        except IndexError:
-            pass
             
     @osu.command()
     async def user(self, interaction: discord.Interaction, username: Optional[str]):
