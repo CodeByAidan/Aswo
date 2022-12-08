@@ -225,7 +225,7 @@ class osu(commands.Cog):
 
         self.cached_skins[current] = [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins]
 
-        return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[:25] if skin['id'] is int(current)]
+        return [app_commands.Choice(name=skin['skin'], value=skin['id']) for skin in skins[:25] if skin['id'] == int(current)]
 
 
 
