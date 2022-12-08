@@ -120,34 +120,34 @@ class osu(commands.Cog):
             
     @osu.command()
     async def user(self, interaction: discord.Interaction, username: Optional[str]):
-            """Gets info on osu account"""
+        """Gets info on osu account"""
 
-            user_query = await self.bot.pool.fetchrow("SELECT osu_username FROM osu_user WHERE user_id = $1", interaction.user.id) 
-            try:
-                if user_query is None and username is None:
-                    user = await self.bot.osu.fetch_user(interaction.user.display_name, key="username")
-                elif user_query is not None and username is None:
-                    user = await self.bot.osu.fetch_user(user_query.get("osu_username"), key="username")
-                else:
-                    user = await self.bot.osu.fetch_user(username, key="username")
-            except Exception as e:
-                return await interaction.response.send_message(f"{e}", ephemeral=True)
+        user_query = await self.bot.pool.fetchrow("SELECT osu_username FROM osu_user WHERE user_id = $1", interaction.user.id)
+        try:
+            if user_query is None and username is None:
+                user = await self.bot.osu.fetch_user(interaction.user.display_name, key="username")
+            elif user_query is not None and username is None:
+                user = await self.bot.osu.fetch_user(user_query.get("osu_username"), key="username")
+            else:
+                user = await self.bot.osu.fetch_user(username, key="username")
+        except Exception as e:
+            return await interaction.response.send_message(f"{e}", ephemeral=True)
 
 
-            ss_text = user.rank['ss']
-            ssh_text = user.rank['ssh']
-            s_text = user.rank['s']
-            sh_text = user.rank['sh']
-            a_text = user.rank['a']
-            profile_order ='\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(x for x in user.profile_order)
-            profile_order = profile_order.replace("_", " ")
-            
-            view = DropdownView(interaction.user.id,user)
-        
-        
-            embed = discord.Embed(description=f"**{user.country_emoji} | Profile for [{user.username}](https://osu.ppy.sh/users/{user.id})**\n\n▹ **Bancho Rank**: #{user.global_rank:,} ({user.country_code}#{user.country_rank:,})\n▹ **Join Date**: {user.joined_at}\n▹ **PP**: {int(user.pp):,} **Acc**: {user.accuracy}%\n▹ **Ranks**: ``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {profile_order}**", color=0x2F3136)
-            embed.set_thumbnail(url=user.avatar_url)
-            await interaction.response.send_message(embed=embed, view=view)
+        ss_text = user.rank['ss']
+        ssh_text = user.rank['ssh']
+        s_text = user.rank['s']
+        sh_text = user.rank['sh']
+        a_text = user.rank['a']
+        profile_order = '\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(user.profile_order)
+        profile_order = profile_order.replace("_", " ")
+
+        view = DropdownView(interaction.user.id,user)
+
+
+        embed = discord.Embed(description=f"**{user.country_emoji} | Profile for [{user.username}](https://osu.ppy.sh/users/{user.id})**\n\n▹ **Bancho Rank**: #{user.global_rank:,} ({user.country_code}#{user.country_rank:,})\n▹ **Join Date**: {user.joined_at}\n▹ **PP**: {int(user.pp):,} **Acc**: {user.accuracy}%\n▹ **Ranks**: ``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {profile_order}**", color=0x2F3136)
+        embed.set_thumbnail(url=user.avatar_url)
+        await interaction.response.send_message(embed=embed, view=view)
 
     @osu.command(description="Finds info on a beatmap")
     @app_commands.describe(beatmap="Beatmap to get info on")
