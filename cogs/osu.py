@@ -23,7 +23,7 @@ class UserSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):      
         await interaction.response.defer()
-   
+
         if self.values[0] == "Account Avatar":
             embed = discord.Embed(color=0x2F3136)
             avatar_url = self.user.avatar_url
@@ -44,13 +44,13 @@ class UserSelect(discord.ui.Select):
         if self.values[0] == "Info":
             embed = discord.Embed(color=0x2F3136)
             view = DropdownView(interaction.user.id,self.user)
-            
+
             ss_text = self.user.rank['ss']
             ssh_text = self.user.rank['ssh']
             s_text = self.user.rank['s']
             sh_text = self.user.rank['sh']
             a_text = self.user.rank['a']
-            profile_order ='\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(x for x in self.user.profile_order)
+            profile_order = '\n ​ ​ ​ ​ ​ ​ ​ ​  - '.join(self.user.profile_order)
             profile_order = profile_order.replace("_", " ")
 
             embed.description = f"**{self.user.country_emoji} | Profile for [{self.user.username}](https://osu.ppy.sh/users/{self.user.id})**\n\n▹ **Bancho Rank**: #{self.user.global_rank:,} ({self.user.country_code}#{self.user.country_rank:,})\n▹ **Join Date**: {self.user.joined_at}\n▹ **PP**: {int(self.user.pp):,} **Acc**: {self.user.accuracy}%\n▹ **Ranks**: ``SS {ss_text:,}`` | ``SSH {ssh_text:,}`` | ``S {s_text:,}`` | ``SH {sh_text:,}`` | ``A {a_text:,}``\n▹ **Profile Order**: \n** ​ ​ ​ ​ ​ ​ ​ ​  - {profile_order}**"
